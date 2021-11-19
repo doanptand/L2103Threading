@@ -6,6 +6,10 @@ import android.os.*
 import androidx.appcompat.app.AppCompatActivity
 import android.widget.Toast
 import com.ddona.threading.databinding.ActivityMainBinding
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.net.URL
 
 class MainActivity : AppCompatActivity() {
@@ -32,8 +36,24 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
         binding.imgDownload.setOnClickListener {
 //            downloadImage()
-            DownloadFile().execute("https://photo-cms-baonghean.zadn.vn/w607/Uploaded/2021/ftgbtgazsnzm/2020_07_14/ngoctrinhmuonsinhcon1_swej7996614_1472020.jpg")
+            GlobalScope.launch {
+                val bitmap = downloadFileWithCoroutine()
+                withContext(Dispatchers.Main) {
+                    binding.imgAvatar.setImageBitmap(bitmap)
+                }
+            }
+//            DownloadFile().execute("https://photo-cms-baonghean.zadn.vn/w607/Uploaded/2021/ftgbtgazsnzm/2020_07_14/ngoctrinhmuonsinhcon1_swej7996614_1472020.jpg")
         }
+
+
+    }
+
+    suspend fun downloadFileWithCoroutine(): Bitmap {
+        val url =
+            URL("https://photo-cms-baonghean.zadn.vn/w607/Uploaded/2021/ftgbtgazsnzm/2020_07_14/ngoctrinhmuonsinhcon1_swej7996614_1472020.jpg")
+        val connection = url.openConnection()
+        val inputStream = connection.getInputStream()
+        return BitmapFactory.decodeStream(inputStream)
     }
 
     inner class DownloadFile : AsyncTask<String, Void, Bitmap>() {
