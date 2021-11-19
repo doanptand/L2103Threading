@@ -4,7 +4,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.*
 import androidx.appcompat.app.AppCompatActivity
-import android.util.Log
+import android.widget.Toast
 import com.ddona.threading.databinding.ActivityMainBinding
 import java.net.URL
 
@@ -31,8 +31,34 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         binding.imgDownload.setOnClickListener {
-            downloadImage()
+//            downloadImage()
+            DownloadFile().execute("https://photo-cms-baonghean.zadn.vn/w607/Uploaded/2021/ftgbtgazsnzm/2020_07_14/ngoctrinhmuonsinhcon1_swej7996614_1472020.jpg")
         }
+    }
+
+    inner class DownloadFile : AsyncTask<String, Void, Bitmap>() {
+        override fun onPreExecute() {
+            super.onPreExecute()
+            Toast.makeText(applicationContext, "Start Downloading!", Toast.LENGTH_SHORT).show()
+        }
+
+        override fun doInBackground(vararg params: String?): Bitmap {
+            val link = params[0]
+            val url = URL(link)
+            val connection = url.openConnection()
+            val inputStream = connection.getInputStream()
+            return BitmapFactory.decodeStream(inputStream)
+        }
+
+        override fun onProgressUpdate(vararg values: Void?) {
+            super.onProgressUpdate(*values)
+        }
+
+        override fun onPostExecute(result: Bitmap?) {
+            super.onPostExecute(result)
+            binding.imgAvatar.setImageBitmap(result)
+        }
+
     }
 
     fun downloadImage() {
