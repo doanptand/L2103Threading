@@ -3,16 +3,17 @@ package com.ddona.threading
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.*
+import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import android.widget.Toast
+import androidx.lifecycle.lifecycleScope
 import com.ddona.threading.databinding.ActivityMainBinding
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
 import java.net.URL
+import kotlin.coroutines.CoroutineContext
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), CoroutineScope {
+
 
     private val UPDATE_IMAGE = 1
 
@@ -30,22 +31,76 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private lateinit var job: Job
+    override val coroutineContext: CoroutineContext
+        get() = Dispatchers.Main + job
+
+    private lateinit var job1: Job
+    private lateinit var job2: Job
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        job = Job()
+        job1 = Job()
+        job2 = Job()
+        val scope1 = CoroutineScope(Dispatchers.IO + job1)
+        val scope2 = CoroutineScope(Dispatchers.Main + job2)
+//        runBlocking {
+//            //block current thread until this coroutine scope finished job
+//        }
+//        scope1.launch {
+//            //tao coroutine scope va run task ma khong block main thread
+//        }
+//        scope2.launch {
+//
+//        }
+        val friends = async(Dispatchers.IO) {
+            getAllFriends()
+        }
+        val messages = async(Dispatchers.IO) {
+            getAllMessage()
+        }
+        launch {
+            val user = friends.await() + messages.await()
+            Log.d("doanpt", "user:$user")
+        }
+
+
         binding.imgDownload.setOnClickListener {
-//            downloadImage()
-            GlobalScope.launch {
+            launch(Dispatchers.IO) {
                 val bitmap = downloadFileWithCoroutine()
                 withContext(Dispatchers.Main) {
                     binding.imgAvatar.setImageBitmap(bitmap)
                 }
             }
+//            downloadImage()
+//            GlobalScope.launch {
+//                val bitmap = downloadFileWithCoroutine()
+//                withContext(Dispatchers.Main) {
+//                    binding.imgAvatar.setImageBitmap(bitmap)
+//                }
+//            }
 //            DownloadFile().execute("https://photo-cms-baonghean.zadn.vn/w607/Uploaded/2021/ftgbtgazsnzm/2020_07_14/ngoctrinhmuonsinhcon1_swej7996614_1472020.jpg")
         }
 
 
+    }
+
+    suspend fun getAllFriends(): String {
+        return "This is list friends"
+    }
+
+    suspend fun getAllMessage(): String {
+        return "This is message list for user"
+    }
+
+    override fun onDestroy() {
+        job.cancel()
+        job2.cancel()
+        lifecycleScope.cancel()
+        super.onDestroy()
     }
 
     suspend fun downloadFileWithCoroutine(): Bitmap {
